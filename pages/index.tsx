@@ -1,108 +1,70 @@
-import { ConnectWallet } from "@thirdweb-dev/react";
+import type { NextPage } from "next";
 import styles from "../styles/Home.module.css";
-import Image from "next/image";
-import { NextPage } from "next";
+import {
+  ConnectWallet,
+  useAddress,
+  useContract,
+  useOwnedNFTs,
+} from "@thirdweb-dev/react";
+import { CHARACTERS_ADDRESS } from "../const/contractAddresses";
+import MintContainer from "../components/MintContainer";
+import MintContainerOwned from "../components/MintContainerOwned";
+import { useRouter } from "next/router";
 
 const Home: NextPage = () => {
-  return (
-    <main className={styles.main}>
+  const { contract: editionDrop } = useContract(
+    CHARACTERS_ADDRESS,
+    "edition-drop"
+  );
+
+  const address = useAddress();
+  const router = useRouter();
+
+  const {
+    data: ownedNfts,
+    isLoading,
+    isError,
+  } = useOwnedNFTs(editionDrop, address);
+
+  // 0. Wallet Connect - required to check if they own an NFT
+  if (!address) {
+    return (
       <div className={styles.container}>
-        <div className={styles.header}>
-          <h1 className={styles.title}>
-            Welcome to{" "}
-            <span className={styles.gradientText0}>
-              <a
-                href="https://thirdweb.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                thirdweb.
-              </a>
-            </span>
-          </h1>
-
-          <p className={styles.description}>
-            Get started by configuring your desired network in{" "}
-            <code className={styles.code}>src/index.js</code>, then modify the{" "}
-            <code className={styles.code}>src/App.js</code> file!
-          </p>
-
-          <div className={styles.connect}>
-            <ConnectWallet
-              dropdownPosition={{
-                side: "bottom",
-                align: "center",
-              }}
-            />
-          </div>
-        </div>
-
-        <div className={styles.grid}>
-          <a
-            href="https://portal.thirdweb.com/"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              src="/images/portal-preview.png"
-              alt="Placeholder preview of starter"
-              width={300}
-              height={200}
-            />
-            <div className={styles.cardText}>
-              <h2 className={styles.gradientText1}>Portal ➜</h2>
-              <p>
-                Guides, references, and resources that will help you build with
-                thirdweb.
-              </p>
-            </div>
-          </a>
-
-          <a
-            href="https://thirdweb.com/dashboard"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              src="/images/dashboard-preview.png"
-              alt="Placeholder preview of starter"
-              width={300}
-              height={200}
-            />
-            <div className={styles.cardText}>
-              <h2 className={styles.gradientText2}>Dashboard ➜</h2>
-              <p>
-                Deploy, configure, and manage your smart contracts from the
-                dashboard.
-              </p>
-            </div>
-          </a>
-
-          <a
-            href="https://thirdweb.com/templates"
-            className={styles.card}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              src="/images/templates-preview.png"
-              alt="Placeholder preview of templates"
-              width={300}
-              height={200}
-            />
-            <div className={styles.cardText}>
-              <h2 className={styles.gradientText3}>Templates ➜</h2>
-              <p>
-                Discover and clone template projects showcasing thirdweb
-                features.
-              </p>
-            </div>
-          </a>
-        </div>
+        <ConnectWallet theme="dark" />
       </div>
-    </main>
+    );
+  }
+
+  // 1. Loading
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  // Something went wrong
+  if (!ownedNfts || isError) {
+    return <div>Error</div>;
+  }
+
+  // 2. No NFTs - mint page
+  if (ownedNfts.length === 0) {
+    return (
+      <div className={styles.container}>
+        <MintContainer />
+      </div>
+    );
+  }
+
+  // 3. Has NFT already - show button to take to game
+  return (
+    <div className={styles.container}>
+      <MintContainerOwned />
+      {/* <button
+        className={`${styles.mainButton} ${styles.spacerBottom}`}
+        onClick={() => router.push("/play")}
+      >
+        Play Game
+      </button> */}
+    </div>
   );
 };
 
